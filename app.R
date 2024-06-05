@@ -1,182 +1,5 @@
-# ToDo
-# Cards eher nebeneinander
-# In Card 2 tabs für die verschiedenen Bäume
-# Warum gibt es nicht für jeden Datenpunkt einen Baum?
+source("setup.R")
 
-library(shiny)
-# library(bslib)
-library(tidyverse)
-library(shinydashboard)
-
-theme_set(theme_bw(base_size = 20))
-mycss <- "
-/* SliderInput color*/
-.irs--shiny .irs-bar--single {
-    border-radius: 8px 0 0 8px;
-    background: purple;
-    border-color: black;
-}
-.irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
-    color: #fff;
-    text-shadow: none;
-    padding: 1px 3px;
-    background-color: #800080;
-    border-radius: 3px;
-    font-size: 11px;
-    line-height: 1.333;
-}
-
-/* Sidebar distance between icon and text*/
-.fa-solid, .fas {
-    font-weight: 900;
-    margin-right: 10px;
-}
-
-/* Sidebar input coloring
-.selectize-control.single .selectize-input, .selectize-control.single .selectize-input input {
-    cursor: pointer;
-    background: purple;
-}*/
-
-/* options */
-.option {
-  color: purple;
-  background: white
-}
-
-.option.selected {
-  color: white;
-  background: purple
-}
-
-
-.selectize-input.focus {
-    border-color: purple;
-    box-shadow: none;
-}
-
-.form-control:focus {
-    border-color: purple;
-}
-
-a {
-    color: purple;
-}
-"
-
-
-
-body_hoehe = function(){
-    return(
-        fluidPage(
-            box(
-                title = "Nutzereingabe Baumhöhe",
-                width = "100%",
-                fluidRow(
-                    column(4, selectInput("method_hoehe", label = "Methode",
-                                          choices = list("Raten" = "Raten",
-                                                         "Laser" = "Laser",
-                                                         "App" = "App"))),
-                    column(4, selectInput("tree_hoehe", label = "Baum ID",
-                                          choices = list("B1", "B2", "B3"))),
-                    column(4, numericInput("value", "Wert (m)", min = 0, max = 100,
-                                           value = 0))
-                ),
-                
-                actionButton("updateHeights", label = "Update", 
-                             style = "background:purple; color:white;
-                             margin-top:20px; margin-bottom:20px"),
-                
-                sliderInput("pdata_heights",
-                            "Datenpunkte (%)",
-                            min = 0,
-                            max = 100,
-                            value = 100,
-                            width = "100%")
-            ),
-            
-            box(
-                title = "Visualisierung",
-                width = "100%",
-                tabsetPanel(
-                    tabPanel("Baum 1", plotOutput("b1boxplot_height")),
-                    tabPanel("Baum 2", plotOutput("b2boxplot_height")),
-                    tabPanel("Baum 3", plotOutput("b3boxplot_height"))
-            )
-        )
-    ))
-}
-
-body_dbh = function(){
-    return(
-        fluidPage(
-            box(
-                title = "Nutzereingabe BHD",
-                width = "100%",
-                fluidRow(
-                    column(4, selectInput("method_dbh", label = "Methode",
-                                          choices = list("Raten" = "Raten",
-                                                         "Massband" = "Massband",
-                                                         "Kluppe" = "Kluppe"))),
-                    column(4, selectInput("tree_dbh", label = "Baum ID",
-                                          choices = list("B1", "B2", "B3"))),
-                    column(4, numericInput("value_dbh", "Wert (cm)", min = 0, max = 100,
-                                           value = 0))
-                ),
-                
-                actionButton("updateDBH", label = "Update", 
-                             style = "background:purple; color:white;
-                             margin-top:20px; margin-bottom:20px"),
-                
-                sliderInput("pdata_dbh",
-                            "Datenpunkte (%)",
-                            min = 0,
-                            max = 100,
-                            value = 100,
-                            width = "100%")
-            ),
-            
-            box(
-                title = "Visualisierung",
-                width = "100%",
-                tabsetPanel(
-                    tabPanel("Baum 1", plotOutput("b1boxplot_dbh")),
-                    tabPanel("Baum 2", plotOutput("b2boxplot_dbh")),
-                    tabPanel("Baum 3", plotOutput("b3boxplot_dbh"))
-                )
-            )
-        ))
-}
-
-body_raten = function(){
-    return(
-        fluidPage(
-            box(
-                title = "Visualisierung",
-                width = "100%",
-                tabsetPanel(
-                    tabPanel("Baum 1", plotOutput("b1boxplot_raten")),
-                    tabPanel("Baum 2", plotOutput("b2boxplot_raten")),
-                    tabPanel("Baum 3", plotOutput("b3boxplot_raten"))
-                )
-            )
-        )
-    )
-}
-
-body_help = function(){
-    return(
-        fluidPage(
-            box(
-                title = "Was ist ein Boxplot?",
-                width = "100%",
-                fluidRow(column(12, img(src='boxplot_wikipedia.png', align = "left"))),
-                p("Quelle: https://de.wikipedia.org/wiki/Box-Plot")
-                
-            )
-        )
-    )
-}
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(
@@ -207,71 +30,118 @@ ui <- dashboardPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    values <- reactiveValues(heights = read.csv("height_data.csv"),
-                             dbh = read.csv("dbh_data.csv"))
+    print("Working directory")
+    print(getwd())
+    
+    get.csv = function(key){
+        fn = paste("data/", key, "_data.csv", sep = "")
+        if (file.exists(fn)){
+            df = read.csv(fn)
+        } else {
+            df <- read.table(text = "",
+                                  colClasses = c("character", "numeric", "character", "numeric"),
+                                  col.names = c("method", "wert", "baum", "zeit"))
+        }
+        return(df)
+    }
+    values <- reactiveValues(heights = get.csv("height"),
+                             dbh = get.csv("dbh"))
+    
+    get.sys.time = function(){
+        tt = format(Sys.time(), "%H %M %S")
+        tt = strsplit(tt, " ")[[1]]
+        return(round(as.numeric(tt[1]) + as.numeric(tt[2])/60 + as.numeric(tt[2])/60/60, 3))
+    }
     
     # heights ----
     heights = reactive({
         # Load df
-        heights = read.csv("height_data.csv")
+        heights = values$heights
 
-        # Add new data
-        new_heights = data.frame(method = input$method_hoehe,
-                                 wert = input$value,
-                                 baum = input$tree_hoehe)
-        heights = bind_rows(heights, new_heights)
+        if (input$value_hoehe <= 0){
+            showNotification("Error: Eingabewert <= 0.",
+                             type = "error")
+        } else {
+            # Add new data
+            new_heights = data.frame(method = input$method_hoehe,
+                                     wert = input$value_hoehe,
+                                     baum = input$tree_hoehe, 
+                                     zeit = get.sys.time())
+            heights = bind_rows(heights, new_heights)
 
-        # Save df
-        tryCatch(
-            {        
-                write.csv(heights, "height_data.csv",
-                          row.names = F) 
-                showNotification("Data was saved successfully.",
-                                 type = "message")
-            },
-            error = function(e){
-                showNotification("Error: Data was not saved. Please check if the csv file is closed.",
-                                 type = "error")
+            # Save df
+            tryCatch(
+                {        
+                    write.csv(heights, "data/height_data.csv",
+                              row.names = F) 
+                    showNotification("Data was saved successfully.",
+                                     type = "message")
                 },
-            warning = function(e){
-                showNotification("Error: Data was not saved. Please check if the csv file is closed.",
-                                 type = "error")
-            }
-        )
-       
+                error = function(e){
+                    print(e)
+                    print("WARN")
+                    showNotification("Error: Data was not saved. Please check if the csv file is closed.",
+                                     type = "error")
+                },
+                warning = function(e){
+                    print(e)
+                    print("ERR")
+                    showNotification("Error: Data was not saved. Please check if the csv file is closed.",
+                                     type = "error")
+                }
+            )
+        }
         return(heights)
-        
     })
     
     observeEvent(input$updateHeights, {
         # Update reactive values
-        values$heights = heights()
+        values$heights = heights() %>% 
+            mutate(method = factor(method,
+                                   levels = c("Laser", "App",
+                                              "Raten | Guess")))
     })
     
-    get.heights.boxplot = function(baumID){
-        # generate bins based on input$bins from ui.R
-        heights = values$heights %>% 
-            filter(baum == baumID)
-        pdata = input$pdata_heights / 100
-        
-        neuster_eintrag = heights %>% 
-            group_by(method) %>% 
-            mutate(n = 1:n()) %>% 
-            filter(n == max(n))
-
+    get.empty.plot = function(){
         return(
-            heights %>% 
-                group_by(method) %>% 
-                sample_frac(., pdata) %>% 
-                ggplot(., aes(x = method, y = wert)) +
-                geom_boxplot() +
-                geom_jitter(size = 2) +
-                geom_point(neuster_eintrag,
-                        mapping = aes(x = method, y = wert),
-                        col = "purple", size = 3, shape = 8) +
-                labs(x = "Methode zur Höhenschätzung",
-                     y = "Höhe (m)")
+            data.frame(message = "Keine Werte vorhanden. | No values available.") %>% 
+                ggplot(., aes(10, 10)) +
+                geom_text(aes(label = message), size = 12) +
+                theme_void()
         )
+    }
+    
+    get.heights.boxplot = function(baumID){
+        if (nrow(values$heights) == 0){
+            return(get.empty.plot())
+        } else {
+            # generate bins based on input$bins from ui.R
+            heights = values$heights %>% 
+                filter(baum == baumID) 
+            if (nrow(heights) == 0){
+                return(get.empty.plot())
+            } else {
+                pdata = input$pdata_heights / 100
+                
+                heights = heights %>% 
+                    mutate(n = 1:n(),
+                           col = ifelse(n == max(n), "neu", 'alt'))
+                return(
+                    heights %>% 
+                        group_by(method) %>% 
+                        sample_frac(., pdata) %>% 
+                        ggplot(., aes(x = method, y = wert)) +
+                        geom_boxplot(col = "grey53") +
+                        geom_point(position=position_jitterdodge(),
+                                   aes(shape = method, col = col, size = col),
+                                   show.legend = F) +
+                        scale_size_manual(values = c(3, 4)) + 
+                        scale_color_manual(values = c("black", "purple")) +
+                        labs(x = "Methode zur Höhenschätzung | \nMethod to estimate height",
+                             y = "Höhe | Height (m)")
+                )
+            }   
+        }
     }
     
     output$b1boxplot_height <- renderPlot({
@@ -282,74 +152,131 @@ server <- function(input, output) {
         get.heights.boxplot(baumID = "B2")
     })
     
-    
     output$b3boxplot_height <- renderPlot({
         get.heights.boxplot(baumID = "B3")
+    })
+    
+    label_facet <- function(original_var){
+        lev <- levels(as.factor(original_var))
+        lab <- paste0("Baum | Tree", ": ", lev)
+        names(lab) <- lev
+        return(lab)  
+    }
+    
+    get.timeseriesplot = function(key){
+        if (key == "heights"){
+            df = values$heights
+            ylab = "Höhe | Height (m)"
+            pdata = input$pdata_heights / 100
+        } else {
+            df = values$dbh
+            ylab = "BHD | DBH (m)"
+            pdata = input$pdata_dbh / 100
+        }
+        if (nrow(df) == 0){
+            return(get.empty.plot())
+        } else {
+            df %>% 
+                group_by(method) %>% 
+                sample_frac(., pdata) %>% 
+                ggplot(., aes(x = zeit, y = wert, col = method)) +
+                geom_point() +
+                geom_line(alpha = 0.75) +
+                scale_color_viridis_d(end = 0.8) +
+                facet_wrap(~baum, 
+                           labeller = labeller(baum = label_facet(df$baum))) +
+                labs(x = "Uhrzeit | Time",
+                     y = ylab,
+                     col = "Methode | Method") +
+                theme(legend.position = "bottom")
+            
+        }
+    }
+    
+    output$timeseries_height <- renderPlot({
+        get.timeseriesplot(key = "heights")
     })
     
     
     # dbh ----
     dbh = reactive({
         # Load df
-        dbh = read.csv("dbh_data.csv")
-        
-        # Add new data
-        new_dbh = data.frame(method = input$method_hoehe,
-                                 wert = input$value,
-                                 baum = input$tree_hoehe)
-        dbh = bind_rows(dbh, new_dbh)
-        
-        # Save df
-        tryCatch(
-            {        
-                write.csv(dbh, "dbh_data.csv",
-                          row.names = F) 
-                showNotification("Data was saved successfully.",
-                                 type = "message")
-            },
-            error = function(e){
-                showNotification("Error: Data was not saved. Please check if the csv file is closed.",
-                                 type = "error")
-            },
-            warning = function(e){
-                showNotification("Error: Data was not saved. Please check if the csv file is closed.",
-                                 type = "error")
-            }
-        )
+        dbh = values$dbh
+        if (input$value_dbh <= 0){
+            showNotification("Error: Eingabewert <= 0.",
+                             type = "error")
+        } else {
+            # Add new data
+            new_dbh = data.frame(method = input$method_dbh,
+                                 wert = input$value_dbh,
+                                 baum = input$tree_dbh, 
+                                 zeit = get.sys.time())
+            dbh = bind_rows(dbh, new_dbh)
+            
+            # Save df
+            tryCatch(
+                {        
+                    write.csv(dbh, "data/dbh_data.csv",
+                              row.names = F) 
+                    showNotification("Data was saved successfully.",
+                                     type = "message")
+                },
+                error = function(e){
+                    showNotification("Error: Data was not saved. Please check if the csv file is closed.",
+                                     type = "error")
+                },
+                warning = function(e){
+                    showNotification("Error: Data was not saved. Please check if the csv file is closed.",
+                                     type = "error")
+                }
+            )
+        }
         
         return(dbh)
         
     })
     
-    observeEvent(input$updateHeights, {
+    observeEvent(input$updateDBH, {
         # Update reactive values
-        values$dbh = dbh()
+        values$dbh = dbh() %>% 
+            mutate(method = factor(method,
+                                   levels = c("Massband | Tapeline",
+                                              "Kluppe | Caliper", 
+                                              "Raten | Guess")))
     })
     
+    
     get.dbh.boxplot = function(baumID){
-        # generate bins based on input$bins from ui.R
-        dbh = values$dbh %>% 
-            filter(baum == baumID)
-        pdata = input$pdata_dbh / 100
-        
-        neuster_eintrag = dbh %>% 
-            group_by(method) %>% 
-            mutate(n = 1:n()) %>% 
-            filter(n == max(n))
-        
-        return(
-            dbh %>% 
-                group_by(method) %>% 
-                sample_frac(., pdata) %>% 
-                ggplot(., aes(x = method, y = wert)) +
-                geom_boxplot() +
-                geom_jitter(size = 2) +
-                geom_point(neuster_eintrag,
-                           mapping = aes(x = method, y = wert),
-                           col = "purple", size = 3, shape = 8) +
-                labs(x = "Methode zur Durchmesserschätzung",
-                     y = "Höhe (m)")
-        )
+        if (nrow(values$dbh) == 0){
+            return(get.empty.plot())
+        } else {
+            # generate bins based on input$bins from ui.R
+            dbh = values$dbh %>% 
+                filter(baum == baumID) 
+            if (nrow(dbh) == 0){
+                return(get.empty.plot())
+            } else {
+                pdata = input$pdata_dbh / 100
+                
+                dbh = dbh %>% 
+                    mutate(n = 1:n(),
+                           col = ifelse(n == max(n), "neu", 'alt'))
+                return(
+                    dbh %>% 
+                        group_by(method) %>% 
+                        sample_frac(., pdata) %>% 
+                        ggplot(., aes(x = method, y = wert)) +
+                        geom_boxplot(col = "grey53") +
+                        geom_point(position=position_jitterdodge(),
+                                   aes(shape = method, col = col, size = col),
+                                   show.legend = F) +
+                        scale_size_manual(values = c(3, 4)) + 
+                        scale_color_manual(values = c("black", "purple")) +
+                        labs(x = "Methode zur BHD-Schätzung | \nMethod to estimate dbh",
+                             y = "BHD | DBH (m)")
+                )
+            }   
+        }
     }
     
     output$b1boxplot_dbh <- renderPlot({
@@ -366,28 +293,9 @@ server <- function(input, output) {
     })
     
     
-    # Raten ----
-    get.rate.plot = function(){
-        # generate bins based on input$bins from ui.R
-        dbh = values$dbh %>% mutate(typ = "BHD")
-        height = values$heights %>% mutate(typ = "Höhe")
-        df = bind_rows(dbh, height) %>% 
-            filter(method = "Raten")
-        
-        pdata = input$pdata_dbh / 100
-        
-        return(
-            dbh %>% 
-                ggplot(., aes(x = method, y = wert)) +
-                geom_boxplot() +
-                geom_jitter() +
-                geom_point(neuster_eintrag,
-                           mapping = aes(x = method, y = wert),
-                           col = "purple", size = 1.5) +
-                labs(x = "Methode zur Höhenschätzung",
-                     y = "Höhe (m)")
-        )
-    }
+    output$timeseries_dbh <- renderPlot({
+        get.timeseriesplot(key = "dbh")
+    })
 }
 
 # Run the application 
