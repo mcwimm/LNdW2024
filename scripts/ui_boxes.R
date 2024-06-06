@@ -101,17 +101,16 @@ body_help = function(){
     return(
         fluidPage(
             box(
-                title = "Was ist ein Boxplot?",
-                width = "100%",
-                fluidRow(column(12, img(src='boxplot_wikipedia.png', align = "left"))),
-                p("Quelle: https://de.wikipedia.org/wiki/Box-Plot")
-                
-            ),
-            box(
-                title = "Messen",
+                title = HTML("Auswerten & Messen <small>| Analyze & measure </small>"),
                 width = "100%",
                 
                 tabsetPanel(
+                    tabPanel(HTML("Boxplot"),
+                             tags$br(),
+                             fluidRow(column(12, 
+                                             img(src='help_boxplot.jpg', 
+                                                 style="width:400px;max-width:100%;height:auto",
+                                                 align = "left")))),
                     tabPanel(HTML("Kluppe <small>| Using a Caliper</small>"),
                              tags$br(),
                              includeMarkdown("./www/help_caliper.md")),
